@@ -1,27 +1,13 @@
 #!/bin/bash
 
-GIT_URL=http://github.com/TomDataworks
-PUSH_PATH=/mnt/linux/srv/httpd/singularity/ia32
-DEPS_PATH=http://dwaggy.tk/singularity/ia32
-LIST_FILE=deps.txt
+. ./build-settings.sh
+. ./build-common.sh
+
 INFO=fileinfo.txt
-export AUTOBUILD_CONFIG_FILE=autobuild.xml.new
 export DISABLE_UNIT_TESTS=1
 
 pkg_get_value() {
   grep "$2" "$1" | awk '{ print $2 }'
-}
-
-xmlstar_rewrite() {
-  xmlstarlet sel -t -v "//string[text()='PACKAGE_DEPS_MD5SUM']/../../../../key[text()='name']/../preceding-sibling::key" autobuild.xml > autobuild.xml.deps
-  while read line
-  do
-    PACKAGE_DEPS_NAME=`grep $line "${PUSH_PATH}/${LIST_FILE}" | awk '{ print $1 }'`
-    PACKAGE_DEPS_MD5SUM=`grep $line "${PUSH_PATH}/${LIST_FILE}" | awk '{ print $2 }'`
-    PACKAGE_DEPS_FILENAME=`grep $line "${PUSH_PATH}/${LIST_FILE}" | awk '{ print $3 }'`
-    echo $PACKAGE_DEPS_NAME $PACKAGE_DEPS_MD5SUM $PACKAGE_DEPS_FILENAME
-    xmlstarlet ed -u "//key[text() = '${PACKAGE_DEPS_NAME}']/following-sibling::map//key[text() = 'linux']/following-sibling::map[1]//string[text() = 'PACKAGE_DEPS_MD5SUM']" -v "${PACKAGE_DEPS_MD5SUM}" -u "//key[text() = '${PACKAGE_DEPS_NAME}']/following-sibling::map//key[text() = 'linux']/following-sibling::map[1]//string[text() = 'PACKAGE_DEPS_FILENAME']" -v "${DEPS_PATH}/${PACKAGE_DEPS_FILENAME}" autobuild.xml > $AUTOBUILD_CONFIG_FILE
-  done < autobuild.xml.deps
 }
 
 build_pkg() {
@@ -36,7 +22,7 @@ build_pkg() {
     xmlstar_rewrite
     if [ ! -f "${AUTOBUILD_CONFIG_FILE}" ]; then
       echo "No dependencies!"
-      cp autobuild.xml "${AUTOBUILD_CONFIG_FILE}"
+      cp "${AUTOBUILD_CONFIG_FILE_ORIG}" "${AUTOBUILD_CONFIG_FILE}"
     fi
     autobuild install
     autobuild build
@@ -51,6 +37,9 @@ build_pkg() {
     echo "Dependency written."
   popd
 }
+
+# Third party deps builds
+build_pkg fmodstudio
 
 # Non-deps builds
 build_pkg zlib
@@ -81,3 +70,4 @@ build_pkg curl
 build_pkg boost
 build_pkg colladadom
 build_pkg gtk-atk-pango-glib
+build_pkg llceflib
