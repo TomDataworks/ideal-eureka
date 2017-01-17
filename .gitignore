@@ -1,0 +1,4 @@
+3p*
+ThirdPartyFiles/*.gz
+ThirdPartyFiles/*.bz2
+ThirdPartyFiles/*.xz
